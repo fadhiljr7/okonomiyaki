@@ -38,3 +38,4 @@ Bot otomatis untuk menggunakan proxy dari Grass.
 
 ## Catatan
 Pastikan proxy yang digunakan valid dan sesuai format agar bot dapat berjalan dengan lancar.
+Python Version:3.10++
