@@ -1,0 +1,37 @@
+# Proxygrass Bot
+Bot otomatis untuk menggunakan proxy dari Grass.
+
+## Langkah Instalasi
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/fadhiljr7/okonomiyaki.git
+   cd okonomiyaki
+   ```
+
+2. **Install dependencies**
+   Install paket yang diperlukan dari file `requirements.txt`:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Ambil User ID Grass**
+   - Buka [dashboard Grass](https://www.grass.com) Anda.
+   - Buka *inspect element* dengan menekan `Ctrl + Shift + I`.
+   - Buka tab "Console" dan ketik `localStorage.user` untuk mendapatkan User ID akun Grass Anda.
+   - Buat notepad untuk menyimpan userid anda.
+
+4. **Konfigurasi Proxy**
+   Isi daftar proxy pada file `local_proxies.txt` dengan format berikut:
+   ```
+   http://username:password@hostname:port
+   ```
+   Tambahkan satu baris untuk setiap proxy yang ingin digunakan.
+
+5. **Jalankan Bot**
+   Untuk menjalankan bot, gunakan perintah berikut:
+   ```bash
+   python mufiiin.py
+   ```
+
+## Catatan
+Pastikan proxy yang digunakan valid dan sesuai format agar bot dapat berjalan dengan lancar.
