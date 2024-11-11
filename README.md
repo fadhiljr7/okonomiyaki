@@ -19,7 +19,7 @@ Bot otomatis untuk menggunakan proxy dari Grass.
    - Buka [dashboard Grass](https://www.grass.com) Anda.
    - Buka *inspect element* dengan menekan `Ctrl + Shift + I`.
    - Buka tab "Console" dan ketik `localStorage.user` untuk mendapatkan User ID akun Grass Anda.
-   - Buat notepad untuk menyimpan userid anda.
+   - Simpan userid anda pada file `userid.txt`.
 
 5. **Konfigurasi Proxy**
 
