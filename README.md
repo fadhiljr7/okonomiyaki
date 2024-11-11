@@ -25,7 +25,7 @@ Bot otomatis untuk menggunakan proxy dari Grass.
 
    Isi daftar proxy pada file `local_proxies.txt` dengan Connection type `IP Address` menggunakan format berikut:
    ```
-   http://username:password@hostname:port
+   http://username:password@ip:port
    ```
    Tambahkan satu baris untuk setiap proxy yang ingin digunakan.
 
