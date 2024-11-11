@@ -38,6 +38,30 @@ class ProxyBot:
             level="INFO"
         )
 
+    @staticmethod
+    def load_user_id() -> str:
+        """Load user ID from file or prompt user to create one"""
+        userid_file = Path('userid.txt')
+        
+        if not userid_file.exists():
+            logger.warning("userid.txt not found")
+            user_id = input('Please enter your user ID (36 characters): ').strip()
+            
+            if len(user_id) != 36:
+                raise ValueError("User ID must be exactly 36 characters long")
+            
+            # Save the user ID
+            userid_file.write_text(user_id)
+            logger.info("User ID saved to userid.txt")
+            return user_id
+        
+        user_id = userid_file.read_text().strip()
+        if len(user_id) != 36:
+            raise ValueError("Invalid user ID in userid.txt. Must be exactly 36 characters long")
+        
+        logger.info(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        return user_id
+
     async def create_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context with proper settings"""
         ssl_context = ssl.create_default_context()
@@ -166,9 +190,11 @@ async def main():
     bot = ProxyBot(config)
     
     try:
-        user_id = input('Please enter your user ID: ').strip()
-        if not user_id:
-            raise ValueError("User ID cannot be empty")
+        # Load user ID from file
+        user_id = bot.load_user_id()
+        print(f"\n{'='*36}")
+        print(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        print(f"{'='*36}\n")
             
         proxy_file = Path('local_proxies.txt')
         if not proxy_file.exists():
