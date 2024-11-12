@@ -45,10 +45,10 @@ class ProxyBot:
         
         if not userid_file.exists():
             logger.warning("userid.txt not found")
-            user_id = input('Please enter your user ID (36 characters): ').strip()
+            user_id = input('Please enter your user ID: ').strip()
             
-            if len(user_id) != 36:
-                raise ValueError("User ID must be exactly 36 characters long")
+            if not user_id:
+                raise ValueError("User ID cannot be empty")
             
             # Save the user ID
             userid_file.write_text(user_id)
@@ -56,10 +56,15 @@ class ProxyBot:
             return user_id
         
         user_id = userid_file.read_text().strip()
-        if len(user_id) != 36:
-            raise ValueError("Invalid user ID in userid.txt. Must be exactly 36 characters long")
+        if not user_id:
+            raise ValueError("Invalid user ID in userid.txt. User ID cannot be empty")
         
-        logger.info(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        # Hanya menampilkan 10 karakter pertama dan 5 karakter terakhir dari user ID
+        id_length = len(user_id)
+        if id_length > 15:  # Jika ID cukup panjang untuk dimasking
+            logger.info(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        else:  # Jika ID terlalu pendek, tampilkan apa adanya
+            logger.info(f"Login sebagai: {user_id}")
         return user_id
 
     async def create_ssl_context(self) -> ssl.SSLContext:
@@ -193,7 +198,14 @@ async def main():
         # Load user ID from file
         user_id = bot.load_user_id()
         print(f"\n{'='*36}")
-        print(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        
+        # Menampilkan user ID dengan format yang sesuai panjangnya
+        id_length = len(user_id)
+        if id_length > 15:
+            print(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
+        else:
+            print(f"Login sebagai: {user_id}")
+            
         print(f"{'='*36}\n")
             
         proxy_file = Path('local_proxies.txt')
