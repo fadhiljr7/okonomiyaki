@@ -133,10 +133,12 @@ class ProxyBot:
             raise
 
     async def connect_to_wss(self, socks5_proxy: str, user_id: str):
-        """Establish and maintain websocket connection"""
+        """Establish and maintain websocket connection with fallback port"""
         device_id = str(uuid.uuid3(uuid.NAMESPACE_DNS, socks5_proxy))
         retry_count = 0
-        max_retries = 5
+        max_retries = 3
+    
+        ports = [4444, 4650, 80, 443, 8080, 8000, 1025, 1254, 4321, 1234, 4312]  # Define available ports
         
         while True:
             try:
@@ -144,45 +146,65 @@ class ProxyBot:
                 headers = self.get_headers()
                 ssl_context = await self.create_ssl_context()
                 
-                uri = random.choice([
-                    f"wss://{self.config.server_hostname}:4444/",
-                    f"wss://{self.config.server_hostname}:4650/"
-                ])
-
-                proxy = Proxy.from_url(socks5_proxy)
-                
-                async with proxy_connect(
-                    uri,
-                    proxy=proxy,
-                    ssl=ssl_context,
-                    server_hostname=self.config.server_hostname,
-                    extra_headers=headers
-                ) as websocket:
-                    
-                    logger.info(f"Connected to {uri} via {socks5_proxy}")
-                    retry_count = 0  # Reset retry counter on successful connection
-                    
-                    ping_task = asyncio.create_task(self.send_ping(websocket))
+                # Try each port before counting as a retry
+                connection_successful = False
+                for port in ports:
+                    uri = f"wss://{self.config.server_hostname}:{port}/"
                     
                     try:
-                        while True:
-                            response = await websocket.recv()
-                            message = json.loads(response)
-                            await self.handle_message(message, websocket, device_id, user_id, headers)
+                        proxy = Proxy.from_url(socks5_proxy)
+                        
+                        async with proxy_connect(
+                            uri,
+                            proxy=proxy,
+                            ssl=ssl_context,
+                            server_hostname=self.config.server_hostname,
+                            extra_headers=headers
+                        ) as websocket:
+                            
+                            logger.info(f"Connected to {uri} via {socks5_proxy}")
+                            retry_count = 0  # Reset retry counter on successful connection
+                            connection_successful = True
+                            
+                            ping_task = asyncio.create_task(self.send_ping(websocket))
+                            
+                            try:
+                                while True:
+                                    response = await websocket.recv()
+                                    message = json.loads(response)
+                                    await self.handle_message(message, websocket, device_id, user_id, headers)
+                            
+                            except Exception as e:
+                                logger.error(f"Connection error on port {port}: {e}")
+                                ping_task.cancel()
+                                raise
                     
                     except Exception as e:
-                        logger.error(f"Connection error: {e}")
-                        ping_task.cancel()
-                        raise
-                        
+                        logger.warning(f"Failed to connect on port {port}: {e}")
+                        continue  # Try next port if available
+                    
+                    if connection_successful:
+                        break  # Exit port loop if we successfully connected
+                
+                # If we couldn't connect to any port, increment retry counter
+                if not connection_successful:
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        logger.error(f"Max retries reached for proxy {socks5_proxy}. Stopping.")
+                        break
+                    
+                    wait_time = min(300, 2 ** retry_count)  # Exponential backoff
+                    logger.warning(f"All ports failed. Retrying in {wait_time}s... ({retry_count}/{max_retries})")
+                    await asyncio.sleep(wait_time)
+                    
             except Exception as e:
+                logger.error(f"Unexpected error in connection loop: {e}")
                 retry_count += 1
                 if retry_count >= max_retries:
                     logger.error(f"Max retries reached for proxy {socks5_proxy}. Stopping.")
                     break
-                    
-                wait_time = min(300, 2 ** retry_count)  # Exponential backoff
-                logger.warning(f"Connection failed. Retrying in {wait_time}s... ({retry_count}/{max_retries})")
+                
+                wait_time = min(300, 2 ** retry_count)
                 await asyncio.sleep(wait_time)
 
 async def main():
