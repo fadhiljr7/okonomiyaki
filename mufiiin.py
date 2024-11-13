@@ -50,6 +50,7 @@ class ProxyBot:
             if not user_id:
                 raise ValueError("User ID cannot be empty")
             
+            # Save the user ID
             userid_file.write_text(user_id)
             logger.info("User ID saved to userid.txt")
             return user_id
@@ -58,10 +59,11 @@ class ProxyBot:
         if not user_id:
             raise ValueError("Invalid user ID in userid.txt. User ID cannot be empty")
         
+        # Hanya menampilkan 10 karakter pertama dan 5 karakter terakhir dari user ID
         id_length = len(user_id)
-        if id_length > 15: 
+        if id_length > 15:  # Jika ID cukup panjang untuk dimasking
             logger.info(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
-        else:  
+        else:  # Jika ID terlalu pendek, tampilkan apa adanya
             logger.info(f"Login sebagai: {user_id}")
         return user_id
 
@@ -134,9 +136,9 @@ class ProxyBot:
         """Establish and maintain websocket connection with fallback port"""
         device_id = str(uuid.uuid3(uuid.NAMESPACE_DNS, socks5_proxy))
         retry_count = 0
-        max_retries = 3
+        max_retries = 10
     
-        ports = [4444, 4650, 80, 443, 8080, 8000, 1025, 1254, 4321, 1234, 4312] 
+        ports = [4444, 4650, 80, 443, 8443, 8000, 1025, 1254, 4321, 1234, 4312]  # Define available ports
         
         while True:
             try:
@@ -144,6 +146,7 @@ class ProxyBot:
                 headers = self.get_headers()
                 ssl_context = await self.create_ssl_context()
                 
+                # Try each port before counting as a retry
                 connection_successful = False
                 for port in ports:
                     uri = f"wss://{self.config.server_hostname}:{port}/"
@@ -160,7 +163,7 @@ class ProxyBot:
                         ) as websocket:
                             
                             logger.info(f"Connected to {uri} via {socks5_proxy}")
-                            retry_count = 0  
+                            retry_count = 0  # Reset retry counter on successful connection
                             connection_successful = True
                             
                             ping_task = asyncio.create_task(self.send_ping(websocket))
@@ -178,18 +181,19 @@ class ProxyBot:
                     
                     except Exception as e:
                         logger.warning(f"Failed to connect on port {port}: {e}")
-                        continue  
+                        continue  # Try next port if available
                     
                     if connection_successful:
-                        break  
+                        break  # Exit port loop if we successfully connected
                 
+                # If we couldn't connect to any port, increment retry counter
                 if not connection_successful:
                     retry_count += 1
                     if retry_count >= max_retries:
                         logger.error(f"Max retries reached for proxy {socks5_proxy}. Stopping.")
                         break
                     
-                    wait_time = min(300, 2 ** retry_count)  
+                    wait_time = min(300, 2 ** retry_count)  # Exponential backoff
                     logger.warning(f"All ports failed. Retrying in {wait_time}s... ({retry_count}/{max_retries})")
                     await asyncio.sleep(wait_time)
                     
@@ -204,6 +208,7 @@ class ProxyBot:
                 await asyncio.sleep(wait_time)
 
 async def main():
+    # Load configuration
     config = ProxyConfig(
         uri="wss://proxy.wynd.network",
         server_hostname="proxy.wynd.network"
@@ -212,9 +217,11 @@ async def main():
     bot = ProxyBot(config)
     
     try:
+        # Load user ID from file
         user_id = bot.load_user_id()
         print(f"\n{'='*36}")
         
+        # Menampilkan user ID dengan format yang sesuai panjangnya
         id_length = len(user_id)
         if id_length > 15:
             print(f"Login sebagai: {user_id[:10]}...{user_id[-5:]}")
